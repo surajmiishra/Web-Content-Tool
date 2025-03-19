@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Tool</title>
+</head>
+<body>
+    <h1>Web Tool</h1>
+    <form id="ingest-form">
+        <input type="text" name="url" placeholder="Enter URL" required>
+        <button type="submit">Ingest</button>
+    </form>
+    <form id="question-form">
+        <input type="text" name="url" placeholder="Enter URL for context" required>
+        <input type="text" name="question" placeholder="Ask a question" required>
+        <button type="submit">Ask</button>
+    </form>
+    <div id="response"></div>
+    <script>
+        // Function to get CSRF token from cookies
+        function getCSRFToken() {
+            let cookieValue = null;
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    cookieValue = cookie.substring('csrftoken='.length);
+                    break;
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrfToken = getCSRFToken();
+
+        document.getElementById('ingest-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const url = e.target.url.value;
+            const response = await fetch('/ingest/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken  // Include CSRF token in the headers
+                },
+                body: JSON.stringify({url})
+            });
+            const data = await response.json();
+            document.getElementById('response').innerText = data.content || data.error;
+        };
+
+        document.getElementById('question-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const url = e.target.url.value;
+            const question = e.target.question.value;
+            const response = await fetch('/ask/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken  // Include CSRF token in the headers
+                },
+                body: JSON.stringify({url, question})
+            });
+            const data = await response.json();
+            document.getElementById('response').innerText = data.answer || data.error;
+        };
+    </script>
+</body>
+</html>
